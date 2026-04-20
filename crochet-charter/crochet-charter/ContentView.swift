@@ -99,9 +99,15 @@ struct ChartDetailView: View {
     let showRowNumbers: Bool
     @State private var showLegend = false
     @State private var isSharing = false
+    @State private var isRoundMode = false   // NEW — toggle between row grid and round chart
 
-    private var allStitches: [Stitch] {
-        pattern.rows.flatMap(\.stitches)
+    private var allStitches: [Stitch] { pattern.rows.flatMap(\.stitches) }
+
+    // Heuristic: if any row prefix was Rnd/Round, default to round mode
+    private var isLikelyRound: Bool {
+        pattern.rows.first?.rawText.lowercased().hasPrefix("rnd") == true ||
+        pattern.rows.first?.rawText.lowercased().hasPrefix("round") == true ||
+        pattern.rows.first?.rawText.lowercased().hasPrefix("r") == true
     }
 
     var body: some View {
@@ -110,36 +116,45 @@ struct ChartDetailView: View {
                 ContentUnavailableView(
                     "No rows detected",
                     systemImage: "exclamationmark.triangle",
-                    description: Text("Make sure your pattern has lines starting with Row, Rnd, or Round.")
+                    description: Text("Make sure lines start with Row, Rnd, or Round.")
                 )
+            } else if isRoundMode {
+                // ROUND/SQUARE CHART
+                RoundChartContainerView(pattern: pattern)
             } else {
+                // LINEAR ROW GRID
                 ChartView(pattern: pattern, showRowNumbers: showRowNumbers)
+            }
 
-                if showLegend {
-                    Divider()
-                    LegendView(stitches: allStitches)
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
-                }
+            if showLegend {
+                Divider()
+                LegendView(stitches: allStitches)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
         .navigationTitle(pattern.title)
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear { isRoundMode = isLikelyRound }
         .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                HStack {
-                    Button {
-                        withAnimation(.spring(response: 0.3)) {
-                            showLegend.toggle()
-                        }
-                    } label: {
-                        Image(systemName: showLegend ? "list.bullet.circle.fill" : "list.bullet.circle")
-                    }
+            ToolbarItemGroup(placement: .navigationBarTrailing) {
+                // Chart type toggle
+                Button {
+                    withAnimation(.spring(response: 0.3)) { isRoundMode.toggle() }
+                } label: {
+                    Image(systemName: isRoundMode ? "square.on.square.fill" : "square.on.square")
+                }
+                .help(isRoundMode ? "Switch to row grid" : "Switch to round chart")
 
-                    Button {
-                        isSharing = true
-                    } label: {
-                        Image(systemName: "square.and.arrow.up")
-                    }
+                // Legend toggle
+                Button {
+                    withAnimation(.spring(response: 0.3)) { showLegend.toggle() }
+                } label: {
+                    Image(systemName: showLegend ? "list.bullet.circle.fill" : "list.bullet.circle")
+                }
+
+                // Share
+                Button { isSharing = true } label: {
+                    Image(systemName: "square.and.arrow.up")
                 }
             }
         }
@@ -153,7 +168,7 @@ struct ChartDetailView: View {
         for row in pattern.rows {
             let symbols = row.stitches.map(\.symbol).joined()
             let count = row.stitchCount.map { " (\($0))" } ?? ""
-            lines.append("Row \(row.rowNumber): \(symbols)\(count)")
+            lines.append("Rnd \(row.rowNumber): \(symbols)\(count)")
         }
         lines.append("")
         lines.append("Legend:")
@@ -166,6 +181,7 @@ struct ChartDetailView: View {
         return lines.joined(separator: "\n")
     }
 }
+
 
 // MARK: - Share Sheet
 

@@ -69,19 +69,31 @@ struct PatternParser {
 
             // Strip the "Row N:" prefix to get the stitch instructions
             let instructions = stripRowPrefix(from: line)
-            let stitches = parseStitches(from: instructions)
+            var stitches = parseStitches(from: instructions)
 
             // Extract stitch count from parentheses e.g. (12 sts)
             let count = extractStitchCount(from: line)
 
             if !stitches.isEmpty || isRow {
+                //catch MR as first row in circular patterns
+                if stitches.first?.shortName == "mr"{
+                    let mr:[Stitch] = [stitches.first!]
+                    stitches.removeFirst()
+                    rows.append(StitchRow(
+                        rowNumber: detectedNumber,
+                        stitches: mr,
+                        rawText: line,
+                        stitchCount: count
+                    ))
+                    rowCounter = detectedNumber + 1
+                }
                 rows.append(StitchRow(
-                    rowNumber: detectedNumber,
+                    rowNumber: rowCounter,
                     stitches: stitches,
                     rawText: line,
                     stitchCount: count
                 ))
-                rowCounter = detectedNumber + 1
+                rowCounter = rowCounter + 1
             }
         }
 
