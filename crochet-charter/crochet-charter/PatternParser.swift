@@ -149,32 +149,67 @@ struct PatternParser {
         var remaining = instructions.lowercased()
 
         // Remove parenthetical stitch counts at end
-        if let regex = try? NSRegularExpression(pattern: "\\(\\d+\\s*sts?\\)\\s*$") {
-            remaining = regex.stringByReplacingMatches(
-                in: remaining,
-                range: NSRange(remaining.startIndex..., in: remaining),
-                withTemplate: ""
-            )
-        }
-
-        // Split on commas, semicolons for clause separation
-        let clauses = remaining.components(separatedBy: CharacterSet(charactersIn: ",;"))
-
-        for clause in clauses {
-            let trimmed = clause.trimmingCharacters(in: .whitespaces)
-            guard !trimmed.isEmpty else { continue }
-
-            // Try to extract a repeat count before the stitch: e.g. "sc 5", "3 dc"
-            let (stitch, count) = extractStitchAndCount(from: trimmed)
-
-            if let s = stitch {
-                for _ in 0..<max(1, count) {
-                    result.append(s)
+        //FIX - removing repeat patterns
+//        if let regex = try? NSRegularExpression(pattern: "\\(\\d+\\s*sts?\\)\\s*$") {
+//            remaining = regex.stringByReplacingMatches(
+//                in: remaining,
+//                range: NSRange(remaining.startIndex..., in: remaining),
+//                withTemplate: ""
+//            )
+//        }
+        
+        //split on Parantheticals for repeating clauses
+        let repetitions = remaining.components(separatedBy: CharacterSet(charactersIn: "()"))
+        for (ri,repetition) in repetitions.enumerated(){
+            // Split on commas, semicolons for clause separation
+            let trimmedRep = repetition.trimmingCharacters(in: .whitespaces)
+            if trimmedRep.hasPrefix("counts") || trimmedRep.hasSuffix("sts") || isRepeatClause(from: trimmedRep){
+                continue
+            }
+            let clauses = repetition.components(separatedBy: CharacterSet(charactersIn: ",;"))
+            //default repeat - none
+            var repeatClause = 1
+            //check for repeat instruction after clause
+            if repetitions.indices.contains(ri+1){
+                    let futureClauses = repetitions[ri+1].components(separatedBy: CharacterSet(charactersIn: ",;"))
+                    let firstClause = futureClauses[0]
+                    let trimmedClause = firstClause.trimmingCharacters(in: .whitespaces)
+                    if isRepeatClause(from: trimmedClause){
+                        let clauseWords = trimmedClause.components(separatedBy: " ")
+                    for word in clauseWords{
+                            if Int(word) != nil{
+                                repeatClause = Int(word) ?? 1
+                                print("repeating Clause : \(repeatClause)")
+                            }
+                        }
+                    }
+            }
+            print(repetition)
+            for clause in clauses {
+                for _ in 1...repeatClause{
+                    let trimmed = clause.trimmingCharacters(in: .whitespaces)
+                    guard !trimmed.isEmpty else { continue }
+                    guard !isRepeatClause(from: trimmed) else { continue }
+                    // Try to extract a repeat count before the stitch: e.g. "sc 5", "3 dc"
+                    let (stitch, count) = extractStitchAndCount(from: trimmed)
+                    
+                    if let s = stitch {
+                        for _ in 0..<max(1, count) {
+                            result.append(s)
+                        }
+                    }
                 }
             }
         }
 
         return result
+    }
+    
+    private func isRepeatClause(from text:String) -> Bool{
+        if text.hasPrefix("times ") || text.hasPrefix("x ") || text.hasSuffix("times") || text.hasSuffix(" x"){
+            return true
+        }
+        return false
     }
 
     private func extractStitchAndCount(from text: String) -> (Stitch?, Int) {
@@ -225,4 +260,5 @@ struct PatternParser {
         }
         return nil
     }
+    
 }

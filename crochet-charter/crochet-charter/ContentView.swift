@@ -13,9 +13,9 @@ struct PatternInputView: View {
 
     private let examplePattern = """
     Magic Granny Square
-    Rnd 1: Magic ring, ch 3 (counts as dc), 2 dc, ch 2, (3 dc, ch 2) 3 times, sl st to top of ch-3 (12 dc)
-    Rnd 2: sl st to ch-2 sp, ch 3, 2 dc, ch 2, 3 dc, ch 1, (3 dc, ch 2, 3 dc, ch 1) 3 times, sl st (24 dc)
-    Rnd 3: sl st to ch-2 sp, ch 3, 2 dc, ch 2, 3 dc, ch 1, 3 dc in ch-1 sp, ch 1, (3 dc, ch 2, 3 dc, ch 1, 3 dc in ch-1 sp, ch 1) 3 times, sl st (36 dc)
+    Rnd 1: Magic ring, ch 3 (counts as dc), 2 dc, ch 2, (3 dc, ch 2) 3 times, sl st to top of ch-3 
+    Rnd 2: sl st to ch-2 sp, ch 3, 2 dc, ch 2, 3 dc, ch 1, (3 dc, ch 2, 3 dc, ch 1) 3 times, sl st 
+    Rnd 3: sl st to ch-2 sp, ch 3, 2 dc, ch 2, 3 dc, ch 1, 3 dc in ch-1 sp, ch 1, (3 dc, ch 2, 3 dc, ch 1, 3 dc in ch-1 sp, ch 1) 3 times, sl st 
     """
 
     var body: some View {
