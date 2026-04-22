@@ -147,26 +147,17 @@ struct PatternParser {
     func parseStitches(from instructions: String) -> [Stitch] {
         var result: [Stitch] = []
         var remaining = instructions.lowercased()
-
-        // Remove parenthetical stitch counts at end
-        //FIX - removing repeat patterns
-//        if let regex = try? NSRegularExpression(pattern: "\\(\\d+\\s*sts?\\)\\s*$") {
-//            remaining = regex.stringByReplacingMatches(
-//                in: remaining,
-//                range: NSRange(remaining.startIndex..., in: remaining),
-//                withTemplate: ""
-//            )
-//        }
         
         //split on Parantheticals for repeating clauses
-        let repetitions = remaining.components(separatedBy: CharacterSet(charactersIn: "()"))
+        let pattern = /\[.*?\]|\(.*?\)|[^\[\]()]+/
+        let matches = remaining.matches(of: pattern)
+        let repetitions = matches.map { String($0.output) }
         for (ri,repetition) in repetitions.enumerated(){
             // Split on commas, semicolons for clause separation
             let trimmedRep = repetition.trimmingCharacters(in: .whitespaces)
             if trimmedRep.hasPrefix("counts") || trimmedRep.hasSuffix("sts") || isRepeatClause(from: trimmedRep){
                 continue
             }
-            let clauses = repetition.components(separatedBy: CharacterSet(charactersIn: ",;"))
             //default repeat - none
             var repeatClause = 1
             //check for repeat instruction after clause
@@ -184,9 +175,15 @@ struct PatternParser {
                         }
                     }
             }
+            // catch clauses in parenthesis without repeat instructions (worked into one stitch)
+            var clauses:[String] = [String(trimmedRep)]
             print(repetition)
-            for clause in clauses {
-                for _ in 1...repeatClause{
+            if !repetition.hasPrefix("("){
+                print("not same stitch")
+                clauses = repetition.components(separatedBy: CharacterSet(charactersIn: ",;"))
+            }
+            for _ in 1...repeatClause{
+                for clause in clauses {
                     let trimmed = clause.trimmingCharacters(in: .whitespaces)
                     guard !trimmed.isEmpty else { continue }
                     guard !isRepeatClause(from: trimmed) else { continue }

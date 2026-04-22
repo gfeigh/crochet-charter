@@ -13,9 +13,9 @@ struct PatternInputView: View {
 
     private let examplePattern = """
     Magic Granny Square
-    Rnd 1: Magic ring, ch 3 (counts as dc), 2 dc, ch 2, (3 dc, ch 2) 3 times, sl st to top of ch-3 
-    Rnd 2: sl st to ch-2 sp, ch 3, 2 dc, ch 2, 3 dc, ch 1, (3 dc, ch 2, 3 dc, ch 1) 3 times, sl st 
-    Rnd 3: sl st to ch-2 sp, ch 3, 2 dc, ch 2, 3 dc, ch 1, 3 dc in ch-1 sp, ch 1, (3 dc, ch 2, 3 dc, ch 1, 3 dc in ch-1 sp, ch 1) 3 times, sl st 
+    Rnd 1: Magic ring, ch 3 (counts as dc), 2 dc, ch 2, [3 dc, ch 2] 3 times, sl st to top of ch-3 
+    Rnd 2: sl st to ch-2 sp, (ch 3, 2 dc, ch 2, 3 dc), ch 1, [3 dc, ch 2, 3 dc, ch 1] 3 times, sl st 
+    Rnd 3: sl st to ch-2 sp, ch 3, 2 dc, ch 2, 3 dc, ch 1, 3 dc in ch-1 sp, ch 1, [3 dc, ch 2, 3 dc, ch 1, 3 dc in ch-1 sp, ch 1] 3 times, sl st 
     """
 
     var body: some View {
@@ -25,7 +25,7 @@ struct PatternInputView: View {
                 // Editor area
                 ZStack(alignment: .topLeading) {
                     if patternText.isEmpty {
-                        Text("Paste or type your crochet pattern here…\n\nExample:\nRow 1: ch 12\nRow 2: sc in each ch across (12 sts)\nRow 3: inc, sc 10, inc (14 sts)")
+                        Text("Paste or type your crochet pattern here. \nPlease use commas between stich types, \n(Parenthesis for stitches worked into the same stitch), \nand [Brackets for repeating patterns] x 2 \n\nExample:\nRow 1: ch 12\nRow 2: sc in 2nd ch from st, 9 sc (10 sts)\nRow 3: (ch3, dc), [sc, dc] 9 times (20 sts)")
                             .foregroundColor(.secondary)
                             .font(.system(.body, design: .monospaced))
                             .padding(12)
