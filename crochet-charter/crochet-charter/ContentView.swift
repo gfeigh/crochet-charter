@@ -1,31 +1,31 @@
 import SwiftUI
 
-// MARK: - Pattern Input View
+// MARK: - Pattern Input
 
 struct PatternInputView: View {
-    @State private var patternText: String = ""
+    @State private var patternText = ""
     @State private var parsedPattern: ParsedPattern?
     @State private var showChart = false
-    @State private var showRowNumbers = true
-    @FocusState private var isEditorFocused: Bool
+    @FocusState private var editorFocused: Bool
 
     private let parser = PatternParser()
 
-    private let examplePattern = """
-    Magic Granny Square
-    Rnd 1: Magic ring, ch 3 (counts as dc), 2 dc, ch 2, [3 dc, ch 2] 3 times, sl st to top of ch-3 
-    Rnd 2: sl st to ch-2 sp, (ch 3, 2 dc, ch 2, 3 dc), ch 1, [3 dc, ch 2, 3 dc, ch 1] 3 times, sl st 
-    Rnd 3: sl st to ch-2 sp, ch 3, 2 dc, ch 2, 3 dc, ch 1, 3 dc in ch-1 sp, ch 1, [3 dc, ch 2, 3 dc, ch 1, 3 dc in ch-1 sp, ch 1] 3 times, sl st 
+    // A classic 3-round granny square
+    private let example = """
+    Classic Granny Square
+    Rnd 1: Magic ring, ch 3 (counts as dc), 11 dc (12 dc)
+    Rnd 2: sl st to ch-2 sp, ch 3, dc in same stitch, (2 dc) 11 times (24 dc)
+    Rnd 3: sl st to ch-2 sp, ch 3, dc, (2dc, dc) 11 times, sl st (36 dc)
+    Rnd 4: (2 dc, ch 3, dc 2), 8 dc, (2 dc, ch 3, 2 dc), 8 dc, (2 dc, ch 3, 2 dc), 8 dc, (2 dc, ch 3, 2 dc), 8 dc
     """
 
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-
-                // Editor area
+                // Pattern text editor
                 ZStack(alignment: .topLeading) {
                     if patternText.isEmpty {
-                        Text("Paste or type your crochet pattern here. \nPlease use commas between stich types, \n(Parenthesis for stitches worked into the same stitch), \nand [Brackets for repeating patterns] x 2 \n\nExample:\nRow 1: ch 12\nRow 2: sc in 2nd ch from st, 9 sc (10 sts)\nRow 3: (ch3, dc), [sc, dc] 9 times (20 sts)")
+                        Text("Paste your granny square pattern here…\n\nExample format:\nRnd 1: Magic ring, ch 3, 2 dc, ch 2, (3 dc, ch 2) 3 times, sl st\nRnd 2: sl st, ch 3, 2 dc, ch 2, 3 dc, ch 1, (3 dc, ch 2, 3 dc, ch 1) 3 times, sl st")
                             .foregroundColor(.secondary)
                             .font(.system(.body, design: .monospaced))
                             .padding(12)
@@ -33,7 +33,7 @@ struct PatternInputView: View {
                     }
                     TextEditor(text: $patternText)
                         .font(.system(.body, design: .monospaced))
-                        .focused($isEditorFocused)
+                        .focused($editorFocused)
                         .padding(8)
                         .scrollContentBackground(.hidden)
                 }
@@ -41,15 +41,17 @@ struct PatternInputView: View {
                 .cornerRadius(12)
                 .padding()
 
-                // Controls
-                VStack(spacing: 10) {
-                    Toggle("Show row numbers", isOn: $showRowNumbers)
-                        .padding(.horizontal)
+                // Round classification preview
+                if !patternText.isEmpty {
+                    roundPreview
+                }
 
+                // Action buttons
+                VStack(spacing: 10) {
                     HStack(spacing: 12) {
                         Button {
-                            patternText = examplePattern
-                            isEditorFocused = false
+                            patternText = example
+                            editorFocused = false
                         } label: {
                             Label("Load example", systemImage: "doc.text")
                                 .frame(maxWidth: .infinity)
@@ -68,7 +70,7 @@ struct PatternInputView: View {
                     .padding(.horizontal)
 
                     Button {
-                        isEditorFocused = false
+                        editorFocused = false
                         parsedPattern = parser.parse(text: patternText)
                         showChart = true
                     } label: {
@@ -82,118 +84,70 @@ struct PatternInputView: View {
                 }
                 .padding(.bottom)
             }
-            .navigationTitle("Crochet Chart")
+            .navigationTitle("Granny Square Chart")
             .navigationDestination(isPresented: $showChart) {
                 if let pattern = parsedPattern {
-                    ChartDetailView(pattern: pattern, showRowNumbers: showRowNumbers)
+                    GrannyChartView(pattern: pattern)
                 }
             }
+        }
+    }
+
+    // Shows each detected round's shape classification
+    @ViewBuilder
+    private var roundPreview: some View {
+        let pattern = parser.parse(text: patternText)
+        if !pattern.rounds.isEmpty {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    ForEach(pattern.rounds) { round in
+                        VStack(spacing: 2) {
+                            Image(systemName: shapeIcon(round.shape))
+                                .font(.system(size: 14))
+                                .foregroundColor(shapeColor(round.shape))
+                            Text("Rnd \(round.roundNumber)")
+                                .font(.system(size: 9, design: .monospaced))
+                                .foregroundColor(.secondary)
+                            Text(shapeLabel(round.shape))
+                                .font(.system(size: 9))
+                                .foregroundColor(shapeColor(round.shape))
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 6)
+                        .background(shapeColor(round.shape).opacity(0.08))
+                        .cornerRadius(8)
+                    }
+                }
+                .padding(.horizontal)
+                .padding(.vertical, 6)
+            }
+        }
+    }
+
+    private func shapeIcon(_ shape: RoundShape) -> String {
+        switch shape {
+        case .center:   return "scope"
+        case .square:   return "square"
+        case .circular: return "circle"
+        }
+    }
+    private func shapeLabel(_ shape: RoundShape) -> String {
+        switch shape {
+        case .center:   return "center"
+        case .square:   return "square"
+        case .circular: return "round"
+        }
+    }
+    private func shapeColor(_ shape: RoundShape) -> Color {
+        switch shape {
+        case .center:   return .orange
+        case .square:   return Color(.systemIndigo)
+        case .circular: return .teal
         }
     }
 }
 
-// MARK: - Chart Detail View
-
-struct ChartDetailView: View {
-    let pattern: ParsedPattern
-    let showRowNumbers: Bool
-    @State private var showLegend = false
-    @State private var isSharing = false
-    @State private var isRoundMode = false   // NEW — toggle between row grid and round chart
-
-    private var allStitches: [Stitch] { pattern.rows.flatMap(\.stitches) }
-
-    // Heuristic: if any row prefix was Rnd/Round, default to round mode
-    private var isLikelyRound: Bool {
-        pattern.rows.first?.rawText.lowercased().hasPrefix("rnd") == true ||
-        pattern.rows.first?.rawText.lowercased().hasPrefix("round") == true ||
-        pattern.rows.first?.rawText.lowercased().hasPrefix("r") == true
-    }
-
-    var body: some View {
-        VStack(spacing: 0) {
-            if pattern.rows.isEmpty {
-                ContentUnavailableView(
-                    "No rows detected",
-                    systemImage: "exclamationmark.triangle",
-                    description: Text("Make sure lines start with Row, Rnd, or Round.")
-                )
-            } else if isRoundMode {
-                // ROUND/SQUARE CHART
-                RoundChartContainerView(pattern: pattern)
-            } else {
-                // LINEAR ROW GRID
-                ChartView(pattern: pattern, showRowNumbers: showRowNumbers)
-            }
-
-            if showLegend {
-                Divider()
-                LegendView(stitches: allStitches)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-            }
-        }
-        .navigationTitle(pattern.title)
-        .navigationBarTitleDisplayMode(.inline)
-        .onAppear { isRoundMode = isLikelyRound }
-        .toolbar {
-            ToolbarItemGroup(placement: .navigationBarTrailing) {
-                // Chart type toggle
-                Button {
-                    withAnimation(.spring(response: 0.3)) { isRoundMode.toggle() }
-                } label: {
-                    Image(systemName: isRoundMode ? "square.on.square.fill" : "square.on.square")
-                }
-                .help(isRoundMode ? "Switch to row grid" : "Switch to round chart")
-
-                // Legend toggle
-                Button {
-                    withAnimation(.spring(response: 0.3)) { showLegend.toggle() }
-                } label: {
-                    Image(systemName: showLegend ? "list.bullet.circle.fill" : "list.bullet.circle")
-                }
-
-                // Share
-                Button { isSharing = true } label: {
-                    Image(systemName: "square.and.arrow.up")
-                }
-            }
-        }
-        .sheet(isPresented: $isSharing) {
-            ShareSheet(items: [buildShareText()])
-        }
-    }
-
-    private func buildShareText() -> String {
-        var lines = [pattern.title, ""]
-        for row in pattern.rows {
-            let symbols = row.stitches.map(\.symbol).joined()
-            let count = row.stitchCount.map { " (\($0))" } ?? ""
-            lines.append("Rnd \(row.rowNumber): \(symbols)\(count)")
-        }
-        lines.append("")
-        lines.append("Legend:")
-        var seen: Set<String> = []
-        for stitch in allStitches {
-            if seen.insert(stitch.shortName).inserted {
-                lines.append("  \(stitch.symbol) = \(stitch.fullName) (\(stitch.shortName.uppercased()))")
-            }
-        }
-        return lines.joined(separator: "\n")
-    }
-}
-
-
-// MARK: - Share Sheet
-
-struct ShareSheet: UIViewControllerRepresentable {
-    let items: [Any]
-    func makeUIViewController(context: Context) -> UIActivityViewController {
-        UIActivityViewController(activityItems: items, applicationActivities: nil)
-    }
-    func updateUIViewController(_ uvc: UIActivityViewController, context: Context) {}
-}
-
-// MARK: - App Entry Point
+// MARK: - App entry point
 
 @main
 struct CrochetChartApp: App {
